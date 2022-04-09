@@ -1,0 +1,23 @@
+{
+  "name": "window_updater_node",
+  "version": "0.0.1",
+  "description": "electron增量更新node部分",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mashirooooo/window_updater_node.git"
+  },
+  "keywords": [
+    "electron",
+    "update",
+    "node"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mashirooooo/window_updater_node/issues"
+  },
+  "homepage": "https://github.com/mashirooooo/window_updater_node#readme"
+}
