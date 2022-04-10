@@ -3654,6 +3654,7 @@ function checkOrFixOptions(options) {
     if (!fs.existsSync(options.output)) {
         fs.mkdirSync(options.output);
     }
+    options.target = options.target.replace(/\\$/, "");
     options.updateJsonName = options.updateJsonName.replace(/\.json$/, "").replace(/.\\\//ig, "");
 }
 function showDoc() {
@@ -3729,7 +3730,7 @@ function startPack(options) {
                     console.log(chalk__default["default"].green.bold("\n  开始读取配置"));
                     try {
                         if (_options.config) {
-                            config = require(path.join(process.cwd(), _options.config + ".json"));
+                            config = require(path.join(process.cwd(), _options.config));
                             _options = __assign(__assign({}, _options), config);
                         }
                         else {
@@ -3744,7 +3745,7 @@ function startPack(options) {
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    console.log(chalk__default["default"].green.bold("\n  获取文件夹得hash内容"));
+                    console.log(chalk__default["default"].green.bold("\n  获取文件夹的hash内容"));
                     hash = Ae(_options.input);
                     targetPath = path.join(_options.output, _options.target + _options.version);
                     if (!fs.existsSync(targetPath)) {
@@ -3755,9 +3756,9 @@ function startPack(options) {
                 case 2:
                     _a.sent();
                     console.log(chalk__default["default"].green.bold("\n  生成更新配置-json"));
-                    fs.writeFileSync(path.join(_options.output, _options.updateJsonName + ".josn"), JSON.stringify({
+                    fs.writeFileSync(path.join(_options.output, _options.updateJsonName + ".json"), JSON.stringify({
                         version: _options.version,
-                        targetPath: targetPath,
+                        targetPath: _options.target + _options.version,
                         hash: hash
                     }, null, 2));
                     console.log("\n" + chalk__default["default"].bgGreen.white(" 完成 ") + "  " + "The resource file is packaged!\n");
@@ -3786,7 +3787,7 @@ function start() {
                         { name: "pack", alias: "p", type: Boolean, defaultValue: false },
                         { name: "help", alias: "h", type: Boolean, defaultValue: true },
                         { name: "output", alias: "o", type: String, defaultValue: "./build" },
-                        { name: "target", alias: "t", type: String, defaultValue: "./build/gzip" },
+                        { name: "target", alias: "t", type: String, defaultValue: "gzip" },
                         { name: "input", alias: "i", type: String, defaultValue: "./build/win-unpacked" },
                         { name: "updateJsonName", alias: "u", type: String, defaultValue: "update-config" },
                         { name: "config", alias: "c", type: String }

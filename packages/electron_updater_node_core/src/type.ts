@@ -127,3 +127,9 @@ export class UpdateInfo {
   message: any;
 }
 export type DownloadFn = (url: string) => Promise<Readable>;
+
+export enum UpdateStatus {
+  HaveNothingUpdate = 0,
+  Success = 1,
+  Failed = 2,
+}

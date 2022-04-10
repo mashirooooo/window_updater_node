@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { DiffVersionHashResult, DiffVersionHashResultItem, DownloadFn, HashedFolder, HashedFolderAndFileType, HashElementOptions, UpdateInfo, UpdateJson } from "./type";
+import { DiffVersionHashResult, DiffVersionHashResultItem, DownloadFn, HashedFolder, HashedFolderAndFileType, HashElementOptions, UpdateInfo, UpdateJson, UpdateStatus } from "./type";
 /**
  * 生成hash 256
  *
@@ -70,13 +70,14 @@ export declare function zipHashElement(data: HashedFolderAndFileType, path: stri
  *
  * @export
  * @param {(updateInfo: UpdateInfo) => {}} statusCallBack // 更新状态回调
+ * @param {string} updaterName  更新updater名称
  * @param {string} version  当前版本号
  * @param {string} exePath 当前exe路径 app.getPath('exe')
  * @param {string} tempDirectory  临时目录
  * @param {string} updateConfigName  更新配置文件名称
  * @param {UpdateJson} updateJson  更新配置文件
- * @param {string} baseUrl  更新基本地址 `${url}/${gzipDirectory}${version}`
+ * @param {string} baseUrl  更新下载gzip的基本地址 `${url}/${gzipDirectory}${version}`
  * @param {DownloadFn} downloadFn  下载函数
  * @param {HashElementOptions} [options={files: {}}] 通过option 配置文件排除文件文件夹或指定后缀folders: { exclude: ['.*', 'node_modules', 'test_coverage'] },files: { exclude: ['*.js', '*.json'] },
  */
-export declare function updateElectron(statusCallBack: (updateInfo: UpdateInfo) => {}, version: string, exePath: string, tempDirectory: string, updateConfigName: string, updateJson: UpdateJson, baseUrl: string, downloadFn: DownloadFn, options?: HashElementOptions): Promise<void>;
+export declare function updateElectron(statusCallBack: (updateInfo: UpdateInfo) => void, updaterName: string, version: string, exePath: string, tempDirectory: string, updateConfigName: string, updateJson: UpdateJson, baseUrl: string, downloadFn: DownloadFn, options?: HashElementOptions): Promise<UpdateStatus>;

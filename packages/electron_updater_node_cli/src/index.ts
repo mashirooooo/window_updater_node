@@ -24,6 +24,7 @@ function checkOrFixOptions (options: IOption) {
   if (!existsSync(options.output)) {
     mkdirSync(options.output);
   }
+  options.target = options.target.replace(/\\$/, "");
   options.updateJsonName = options.updateJsonName.replace(/\.json$/, "").replace(/.\\\//ig, "");
 }
 function showDoc () {
@@ -94,7 +95,7 @@ async function startPack (options: IOption) {
   console.log(chalk.green.bold("\n  开始读取配置"));
   try {
     if (_options.config) {
-      const config = require(join(process.cwd(), _options.config + ".json"));
+      const config = require(join(process.cwd(), _options.config));
       _options = { ..._options, ...config };
     } else {
       const pkg = require(join(process.cwd(), "package.json"));
@@ -105,7 +106,7 @@ async function startPack (options: IOption) {
   }
   checkOrFixOptions(_options);
   try {
-    console.log(chalk.green.bold("\n  获取文件夹得hash内容"));
+    console.log(chalk.green.bold("\n  获取文件夹的hash内容"));
     const hash = hashElement(_options.input);
     const targetPath = join(_options.output, _options.target + _options.version);
     if (!existsSync(targetPath)) {
@@ -114,9 +115,9 @@ async function startPack (options: IOption) {
     console.log(chalk.green.bold("\n  Gzip压缩文件"));
     await zipHashElement(hash as HashedFolderAndFileType, _options.output, targetPath);
     console.log(chalk.green.bold("\n  生成更新配置-json"));
-    writeFileSync(join(_options.output, _options.updateJsonName + ".josn"), JSON.stringify({
+    writeFileSync(join(_options.output, _options.updateJsonName + ".json"), JSON.stringify({
       version: _options.version,
-      targetPath: targetPath,
+      targetPath: _options.target + _options.version,
       hash: hash
     }, null, 2));
     console.log(
@@ -140,7 +141,7 @@ async function start () {
     { name: "pack", alias: "p", type: Boolean, defaultValue: false },
     { name: "help", alias: "h", type: Boolean, defaultValue: true },
     { name: "output", alias: "o", type: String, defaultValue: "./build" },
-    { name: "target", alias: "t", type: String, defaultValue: "./build/gzip" },
+    { name: "target", alias: "t", type: String, defaultValue: "gzip" },
     { name: "input", alias: "i", type: String, defaultValue: "./build/win-unpacked" },
     { name: "updateJsonName", alias: "u", type: String, defaultValue: "update-config" },
     { name: "config", alias: "c", type: String }
