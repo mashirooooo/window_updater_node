@@ -19,5 +19,6 @@
   "bugs": {
     "url": "https://github.com/mashirooooo/window_updater_node/issues"
   },
-  "homepage": "https://github.com/mashirooooo/window_updater_node#readme"
+  "homepage": "https://github.com/mashirooooo/window_updater_node#readme",
+  "dependencies": {}
 }
