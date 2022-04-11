@@ -1,6 +1,6 @@
 {
   "name": "electron_updater_node_cli",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "cli for electron updater",
   "main": "index.js",
   "types": "types/index.d.ts",
@@ -10,8 +10,21 @@
     "build:types": "tsc",
     "lint:fix": "eslint --fix src/**/*.ts"
   },
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mashirooooo/window_updater_node.git"
+  },
+  "keywords": [
+    "electron",
+    "update",
+    "node"
+  ],
+  "author": "mashirooooo",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mashirooooo/window_updater_node/issues"
+  },
+  "homepage": "https://github.com/mashirooooo/window_updater_node#readme",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^21.0.3",
     "@rollup/plugin-typescript": "^8.3.1",
