@@ -215,11 +215,11 @@ export async function updateElectron (
   if (!existsSync(tempDirectory)) {
     mkdirSync(tempDirectory);
   }
+  const noAsar = process.noAsar;
   try {
     if (gt(updateJson.version, version)) {
-      // await emptyDir(updatePath)
-      // const filePath = join(updatePath, updateJson.name)
       updateInfo.status = "downloading";
+      process.noAsar = true;
       const hash = hashElement(dirDirectory, options);
       handleHashedFolderChildrenToObject(hash as HashedFolderAndFileType);
       const diffResult = diffVersionHash(hash as HashedFolderAndFileType, updateJson.hash as HashedFolder);
@@ -238,6 +238,7 @@ export async function updateElectron (
       await Promise.all(diffResult.added.map(item => {
         return downAndungzip(item.hash, `${baseUrl}/${item.hash}.gz`, join(tempDirectory, item.hash), downloadFn);
       }));
+      process.noAsar = noAsar;
       console.log("complete");
       // 下载完成 交给rust端处理
       updateInfo.status = "finished";
@@ -247,7 +248,8 @@ export async function updateElectron (
         env: {
           exe_path: exePath,
           update_temp_path: tempDirectory,
-          update_config_file_name: updateConfigName + ".json"
+          update_config_file_name: updateConfigName + ".json",
+          exe_pid: process.pid.toString()
         },
         stdio: "ignore"
       });
@@ -256,6 +258,7 @@ export async function updateElectron (
       return UpdateStatus.HaveNothingUpdate;
     }
   } catch (error) {
+    process.noAsar = noAsar;
     console.log(error);
     updateInfo.status = "failed";
     updateInfo.message = error;

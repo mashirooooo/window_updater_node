@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { Readable } from "stream";
 
 /**
@@ -132,4 +133,12 @@ export enum UpdateStatus {
   HaveNothingUpdate = 0,
   Success = 1,
   Failed = 2,
+}
+
+declare global {
+  namespace NodeJS {
+    export interface Process {
+      noAsar?: boolean;
+    }
+  }
 }

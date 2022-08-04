@@ -144,7 +144,10 @@ async function start () {
     { name: "target", alias: "t", type: String, defaultValue: "gzip" },
     { name: "input", alias: "i", type: String, defaultValue: "./build/win-unpacked" },
     { name: "updateJsonName", alias: "u", type: String, defaultValue: "update-config" },
-    { name: "config", alias: "c", type: String }
+    { name: "config", alias: "c", type: String },
+    { name: "get", alias: "g", type: Boolean, defaultValue: false },
+    { name: "arch", alias: "a", type: String, defaultValue: "x64" },
+    { name: "arch", alias: "a", type: String, defaultValue: "x640" }
   ];
   // 解析
   const options = commandLineArgs(optionDefinitions) as IOption;
