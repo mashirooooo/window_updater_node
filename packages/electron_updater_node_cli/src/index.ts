@@ -113,7 +113,7 @@ async function startPack (options: IOption) {
       mkdirSync(targetPath);
     }
     console.log(chalk.green.bold("\n  Gzip压缩文件"));
-    await zipHashElement(hash as HashedFolderAndFileType, _options.output, targetPath);
+    await zipHashElement(hash as HashedFolderAndFileType, _options.input, targetPath, true);
     console.log(chalk.green.bold("\n  生成更新配置-json"));
     writeFileSync(join(_options.output, _options.updateJsonName + ".json"), JSON.stringify({
       version: _options.version,
@@ -146,8 +146,7 @@ async function start () {
     { name: "updateJsonName", alias: "u", type: String, defaultValue: "update-config" },
     { name: "config", alias: "c", type: String },
     { name: "get", alias: "g", type: Boolean, defaultValue: false },
-    { name: "arch", alias: "a", type: String, defaultValue: "x64" },
-    { name: "arch", alias: "a", type: String, defaultValue: "x640" }
+    { name: "arch", alias: "a", type: String, defaultValue: "x64" }
   ];
   // 解析
   const options = commandLineArgs(optionDefinitions) as IOption;

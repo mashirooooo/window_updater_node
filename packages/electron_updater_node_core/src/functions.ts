@@ -163,6 +163,7 @@ export function gzip (source: string, targetPath: string): Promise<void> { // so
     readStream.pipe(gzip).pipe(writeStream); // 读=>压缩=>写新的
   });
 }
+
 /**
  * hashElement后将对应的数据gzip压缩
  *
@@ -170,11 +171,12 @@ export function gzip (source: string, targetPath: string): Promise<void> { // so
  * @param {HashedFolderAndFileType} data
  * @param {string} path
  * @param {string} targetPath
+ * @param {boolean} [ignoreFirstDir=false]
  */
-export async function zipHashElement (data: HashedFolderAndFileType, path: string, targetPath:string) {
+export async function zipHashElement (data: HashedFolderAndFileType, path: string, targetPath:string, ignoreFirstDir: boolean = false) {
   if ((data as HashedFolder).children) {
     for (let i = 0; i < (data as HashedFolder).children!.length; i++) {
-      await zipHashElement((data as HashedFolder).children![i] as HashedFolderAndFileType, path + "/" + data.name, targetPath);
+      await zipHashElement((data as HashedFolder).children![i] as HashedFolderAndFileType, path + (ignoreFirstDir ? "" : "/" + data.name), targetPath);
     }
   } else {
     await gzip(path + "/" + data.name, join(targetPath, data.hash + ".gz"));

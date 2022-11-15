@@ -63,8 +63,9 @@ export declare function gzip(source: string, targetPath: string): Promise<void>;
  * @param {HashedFolderAndFileType} data
  * @param {string} path
  * @param {string} targetPath
+ * @param {boolean} [ignoreFirstDir=false]
  */
-export declare function zipHashElement(data: HashedFolderAndFileType, path: string, targetPath: string): Promise<void>;
+export declare function zipHashElement(data: HashedFolderAndFileType, path: string, targetPath: string, ignoreFirstDir?: boolean): Promise<void>;
 /**
  * 更新electron
  *

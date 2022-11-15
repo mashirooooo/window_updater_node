@@ -111,3 +111,10 @@ export declare enum UpdateStatus {
     Success = 1,
     Failed = 2
 }
+declare global {
+    namespace NodeJS {
+        interface Process {
+            noAsar?: boolean;
+        }
+    }
+}
