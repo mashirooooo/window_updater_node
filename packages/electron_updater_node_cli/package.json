@@ -5,9 +5,9 @@
   "main": "index.js",
   "types": "types/index.d.ts",
   "scripts": {
-    "build": "rollup -c",
+    "build": "npx rollup -c",
     "start": "npm run build && node index.js",
-    "build:types": "tsc",
+    "build:types": "npx tsc",
     "lint:fix": "eslint --fix src/**/*.ts"
   },
   "repository": {

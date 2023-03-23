@@ -6,8 +6,8 @@
   "module": "lib/bundle.esm.js",
   "types": "types/index.d.ts",
   "scripts": {
-    "build": "rollup -c",
-    "build:types": "tsc",
+    "build": "npx rollup -c",
+    "build:types": "npx tsc",
     "lint:fix": "eslint --fix src/**/*.ts"
   },
   "author": "mashirooooo",
