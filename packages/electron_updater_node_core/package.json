@@ -1,6 +1,6 @@
 {
   "name": "electron_updater_node_core",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "core",
   "main": "lib/bundle.cjs.js",
   "module": "lib/bundle.esm.js",

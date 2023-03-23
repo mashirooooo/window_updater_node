@@ -235,10 +235,10 @@ export async function updateElectron (
         baseUrl += "/";
       }
       await Promise.all(diffResult.changed.map(item => {
-        return downAndungzip(item.hash, `${baseUrl}/${item.hash}.gz`, join(tempDirectory, item.hash), downloadFn);
+        return downAndungzip(item.hash, `${baseUrl}${item.hash}.gz`, join(tempDirectory, item.hash), downloadFn);
       }));
       await Promise.all(diffResult.added.map(item => {
-        return downAndungzip(item.hash, `${baseUrl}/${item.hash}.gz`, join(tempDirectory, item.hash), downloadFn);
+        return downAndungzip(item.hash, `${baseUrl}${item.hash}.gz`, join(tempDirectory, item.hash), downloadFn);
       }));
       process.noAsar = noAsar;
       console.log("complete");
