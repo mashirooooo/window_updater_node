@@ -1,5 +1,7 @@
 name: test build
 on: push
+  branches:
+  - main
 
 jobs:
   test-cli-build:
