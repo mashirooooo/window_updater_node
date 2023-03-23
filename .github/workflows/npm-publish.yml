@@ -24,11 +24,12 @@ jobs:
       - run: node ../../script/npm_sync_version.js
         env:
           VERSIONS: ${{ github.ref_name }}
+      - run: yarn install
       - run: npm run build
       - run: npm run build:types
       - run: npm publish
         env:
-          NODE_AUTH_TOKEN: ${{secrets.NODE_AUTH_TOKEN}}  
+          NODE_AUTH_TOKEN: ${{secrets.NODE_AUTH_TOKEN}}
   publish-npm-electron_updater_node_core:
     runs-on: ubuntu-latest
     defaults:
@@ -46,6 +47,7 @@ jobs:
       - run: node ../../script/npm_sync_version.js
         env:
           VERSIONS: ${{ github.ref_name }}
+      - run: yarn install
       - run: npm run build
       - run: npm run build:types
       - run: npm publish

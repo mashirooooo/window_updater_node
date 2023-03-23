@@ -4,6 +4,7 @@
   "description": "cli for electron updater",
   "main": "index.js",
   "types": "types/index.d.ts",
+  "type": "module",
   "scripts": {
     "build": "npx rollup -c",
     "start": "npm run build && node index.js",
