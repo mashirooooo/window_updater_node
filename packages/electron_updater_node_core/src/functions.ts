@@ -185,7 +185,7 @@ export async function zipHashElement (data: HashedFolderAndFileType, path: strin
 
 /**
  * 更新electron
- *
+ * TODO: 增加下载时回调
  * @export
  * @param {(updateInfo: UpdateInfo) => {}} statusCallBack // 更新状态回调
  * @param {string} updaterName  更新updater名称
