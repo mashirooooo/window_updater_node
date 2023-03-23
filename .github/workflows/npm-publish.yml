@@ -8,26 +8,27 @@ on:
     types: [created]
 
 jobs:
-  build:
+  publish-npm-electron_updater_node_cli:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 16
-      - run: npm ci
-      - run: npm test
+      - name: Get version
+          id: get_version
+          run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
 
-  publish-npm:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Publish
+        uses: actions/checkout@v3
+        uses: actions/setup-node@v3
+         uses: borales/actions-yarn@v4
+
         with:
           node-version: 16
           registry-url: https://registry.npmjs.org/
-      - run: npm ci
-      - run: npm publish
+        run: cd ./packages/electron_updater_node_cli
+        run: node ../../script/npm_sync_version.js
+        run: yarn install
+        run: npm run build
+        run: npm run build:types
+        # run: npm publish
         env:
-          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+          NODE_AUTH_TOKEN: ${{secrets.NODE_AUTH_TOKEN}}
+          VERSIONS: ${{ steps.get_version.outputs.VERSION }}
