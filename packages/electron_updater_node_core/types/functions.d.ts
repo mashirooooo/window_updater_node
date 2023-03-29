@@ -1,5 +1,12 @@
 /// <reference types="node" />
-import { DiffVersionHashResult, DiffVersionHashResultItem, DownloadFn, HashedFolder, HashedFolderAndFileType, HashElementOptions, UpdateInfo, UpdateJson, UpdateStatus } from "./type";
+import {
+    DiffVersionHashResult,
+    DiffVersionHashResultItem,
+    DownloadFn,
+    HashedFolder,
+    HashedFolderAndFileType,
+    HashElementOptions
+} from './type';
 /**
  * 生成hash 256
  *
@@ -66,19 +73,48 @@ export declare function gzip(source: string, targetPath: string): Promise<void>;
  * @param {boolean} [ignoreFirstDir=false]
  */
 export declare function zipHashElement(data: HashedFolderAndFileType, path: string, targetPath: string, ignoreFirstDir?: boolean): Promise<void>;
+
 /**
- * 更新electron
+ * 下载gzip文件
  *
- * @export
- * @param {(updateInfo: UpdateInfo) => {}} statusCallBack // 更新状态回调
- * @param {string} updaterName  更新updater名称
- * @param {string} version  当前版本号
- * @param {string} exePath 当前exe路径 app.getPath('exe')
- * @param {string} tempDirectory  临时目录
- * @param {string} updateConfigName  更新配置文件名称
- * @param {UpdateJson} updateJson  更新配置文件
- * @param {string} baseUrl  更新下载gzip的基本地址 `${url}/${gzipDirectory}${version}`
- * @param {DownloadFn} downloadFn  下载函数
- * @param {HashElementOptions} [options={files: {}}] 通过option 配置文件排除文件文件夹或指定后缀folders: { exclude: ['.*', 'node_modules', 'test_coverage'] },files: { exclude: ['*.js', '*.json'] },
+ * @param {string} sourceHash 文件hash
+ * @param {string} sourceUrl 文件url
+ * @param {string} targetPath 文件存放位置
+ * @param {DownloadFn} downloadFn 下载工具
+ * @return {*}  {Promise<boolean>}
  */
-export declare function updateElectron(statusCallBack: (updateInfo: UpdateInfo) => void, updaterName: string, version: string, exePath: string, tempDirectory: string, updateConfigName: string, updateJson: UpdateJson, baseUrl: string, downloadFn: DownloadFn, options?: HashElementOptions): Promise<UpdateStatus>;
+export declare function downAndungzip(sourceHash: string, sourceUrl: string, targetPath: string, downloadFn: DownloadFn): Promise<boolean>;
+
+/**
+ * 获取临时存储中所有差异包的文件名
+ *
+ * @param {string} tempDirectory 临时存储差异包的目录
+ * @returns {*}  {Promise<string[]>}
+ */
+export declare function getLocalDifferenceFileName(tempDirectory: string): Promise<string[]>;
+
+/**
+ * 判断arr1是否属于arr2
+ *
+ * @param arr1
+ * @param arr2
+ * @returns
+ */
+export declare function hasSameElement(arr1: string[], arr2: string[]): boolean;
+
+/**
+ * 查找出arr2中不属于arr1中的所有数据
+ *
+ * @param {string[]} arr1
+ * @param {string[]} arr2
+ * @returns {string[]}
+ */
+export declare function findDifferentElements(arr1: string[], arr2: string[]): string[];
+
+/**
+ * 数组去重
+ *
+ * @param {string[]} arr
+ * @returns {string[]}
+ */
+export declare function unique(arr: string[]): string[];

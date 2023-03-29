@@ -124,21 +124,22 @@ export class UpdateInfo {
     this.message = "";
   };
 
-  status: "init" | "downloading" | "finished" | "failed";
-  message: any;
+  status: "init" | "failed";
+    message: any;
 }
+
 export type DownloadFn = (url: string) => Promise<Readable>;
 
 export enum UpdateStatus {
-  HaveNothingUpdate = 0,
-  Success = 1,
-  Failed = 2,
+    HaveNothingUpdate = 0,
+    Success = 1,
+    Failed = 2,
 }
 
-declare global {
-  namespace NodeJS {
-    export interface Process {
-      noAsar?: boolean;
-    }
-  }
-}
+// declare global {
+//   namespace NodeJS {
+//     export interface Process {
+//       noAsar?: boolean;
+//     }
+//   }
+// }
