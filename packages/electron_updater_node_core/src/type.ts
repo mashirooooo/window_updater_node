@@ -124,8 +124,8 @@ export class UpdateInfo {
     this.message = "";
   };
 
-  status: "init" | "failed";
-    message: any;
+  status: "init"| "downloading" | "finished" | "failed";
+  message: any;
 }
 
 export type DownloadFn = (url: string) => Promise<Readable>;
