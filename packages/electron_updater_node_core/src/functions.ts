@@ -1,26 +1,11 @@
-import {createHash} from 'crypto';
-import {basename, extname, join} from 'path';
-import {
-    statSync,
-    readFileSync,
-    readdirSync,
-    createWriteStream,
-    createReadStream,
-    existsSync,
-    rename
-} from 'fs';
-import {makeRe} from 'minimatch';
-import {
-    DiffVersionHashResult,
-    DiffVersionHashResultItem,
-    DownloadFn,
-    HashedFile,
-    HashedFolder,
-    HashedFolderAndFileType,
-    HashedFolderAndFileTypeObject,
-    HashElementOptions
-} from './type';
-import {createGzip, createGunzip} from 'zlib';
+import { createHash } from "crypto";
+import { basename, join, dirname, extname } from "path";
+import { statSync, readFileSync, readdirSync, createWriteStream, createReadStream, existsSync, mkdirSync, writeFileSync } from "fs";
+import { makeRe } from "minimatch";
+import { DiffVersionHashResult, DiffVersionHashResultItem, DownloadFn, HashedFile, HashedFolder, HashedFolderAndFileType, HashedFolderAndFileTypeObject, HashElementOptions, UpdateInfo, UpdateJson, UpdateStatus } from "./type";
+import { createGzip, createGunzip } from "zlib";
+import gt from "semver/functions/gt";
+import { spawn } from "child_process";
 
 /**
  * 生成hash 256
@@ -28,8 +13,8 @@ import {createGzip, createGunzip} from 'zlib';
  * @param {(Buffer | string)} data
  * @returns
  */
-export function hash256(data: Buffer | string) {
-    return createHash('sha256').update(data).digest('hex');
+export function hash256 (data: Buffer | string) {
+  return createHash("sha256").update(data).digest("hex");
 }
 
 /**
@@ -39,21 +24,18 @@ export function hash256(data: Buffer | string) {
  * @param {string} param
  * @returns {boolean}
  */
-export function reduceGlobPatterns(
-    globs: string[] | undefined | ((str: string) => boolean),
-    param: string
-): boolean {
-    if (typeof globs === 'function') {
-        return globs(param);
-    } else if (!globs || !Array.isArray(globs) || globs.length === 0) {
-        return false;
-    } else {
-        // combine globs into one single RegEx
-        const regex = new RegExp(
-            globs
-                .reduce((acc, exclude) => {
-                    return acc + '|' + makeRe(exclude).source;
-                }, '')
+export function reduceGlobPatterns (globs: string[] | undefined | ((str: string) => boolean), param: string): boolean {
+  if (typeof globs === "function") {
+    return globs(param);
+  } else if (!globs || !Array.isArray(globs) || globs.length === 0) {
+    return false;
+  } else {
+    // combine globs into one single RegEx
+    const regex = new RegExp(
+      globs
+        .reduce((acc, exclude) => {
+          return acc + "|" + makeRe(exclude).source;
+        }, "")
         .substring(1)
     );
     return regex.test(param);
@@ -67,34 +49,29 @@ export function reduceGlobPatterns(
  * @param {HashElementOptions} options
  * @returns {HashedFolderAndFileType}
  */
-export function hashElement(
-    dirOrFilePath: string,
-    options: HashElementOptions = {}
-): HashedFolderAndFileType | null {
-    const fileOrDir = statSync(dirOrFilePath);
-    const baseName = basename(dirOrFilePath);
-    if (fileOrDir.isFile()) {
-        if (reduceGlobPatterns(options?.files?.exclude, baseName)) {
-            return null;
-        }
-        const result = new HashedFile();
-        result.name = baseName;
-        result.hash = hash256(readFileSync(dirOrFilePath));
-        return result;
-  } else if (fileOrDir.isDirectory()) {
-        if (reduceGlobPatterns(options?.folders?.exclude, baseName)) {
-            return null;
-        }
-        const result = new HashedFolder();
-        result.name = baseName;
-        result.children = readdirSync(dirOrFilePath)
-            .map((item) => {
-                return hashElement(join(dirOrFilePath, item), options);
-            })
-            .filter((item) => item !== null);
-        result.hash = hash256(result.children.map((item) => item!.hash).join(''));
-        return result;
+export function hashElement (dirOrFilePath: string, options: HashElementOptions = {}): HashedFolderAndFileType | null {
+  const fileOrDir = statSync(dirOrFilePath);
+  const baseName = basename(dirOrFilePath);
+  if (fileOrDir.isFile()) {
+    if (reduceGlobPatterns(options?.files?.exclude, baseName)) {
+      return null;
     }
+    const result = new HashedFile();
+    result.name = baseName;
+    result.hash = hash256(readFileSync(dirOrFilePath));
+    return result;
+  } else if (fileOrDir.isDirectory()) {
+    if (reduceGlobPatterns(options?.folders?.exclude, baseName)) {
+      return null;
+    }
+    const result = new HashedFolder();
+    result.name = baseName;
+    result.children = readdirSync(dirOrFilePath).map(item => {
+      return hashElement(join(dirOrFilePath, item), options);
+    }).filter(item => item !== null);
+    result.hash = hash256(result.children.map(item => item!.hash).join(""));
+    return result;
+  }
   return null;
 }
 
@@ -103,19 +80,16 @@ export function hashElement(
  *
  * @param {HashedFolder} data
  */
-export function handleHashedFolderChildrenToObject(data: HashedFolderAndFileType) {
-    if (data && (data as HashedFolder).children) {
-        (data as HashedFolder).childrenObject = (data as HashedFolder).children!.reduce(
-            (prev, next) => {
-                if ((next as HashedFolder).children) {
-                    handleHashedFolderChildrenToObject(next as HashedFolderAndFileType);
-                }
-                prev[next!.name] = next as HashedFolderAndFileType;
-                return prev;
-            },
-            {} as HashedFolderAndFileTypeObject
-        );
-    }
+export function handleHashedFolderChildrenToObject (data: HashedFolderAndFileType) {
+  if (data && (data as HashedFolder).children) {
+    (data as HashedFolder).childrenObject = (data as HashedFolder).children!.reduce((prev, next) => {
+      if ((next as HashedFolder).children) {
+        handleHashedFolderChildrenToObject(next as HashedFolderAndFileType);
+      }
+      prev[next!.name] = next as HashedFolderAndFileType;
+      return prev;
+    }, {} as HashedFolderAndFileTypeObject);
+  }
 }
 
 /**
@@ -127,25 +101,20 @@ export function handleHashedFolderChildrenToObject(data: HashedFolderAndFileType
  * @param {string} path 文件路径
  * @returns
  */
-export function diffVersionHash(
-    oldVersion: HashedFolder,
-    newVersion: HashedFolder,
-    result: DiffVersionHashResult = new DiffVersionHashResult(),
-    path: string = '.'
-) {
-    // 不管是文件夹还是文件 hash一样就返回
-    if (newVersion.hash === oldVersion.hash) {
-        return result;
-    } else if (newVersion.children) {
-        newVersion.children.forEach((item) => {
-            item = item as HashedFolderAndFileType;
-            // 如果老版本含有相同
-            if (oldVersion.childrenObject && oldVersion.childrenObject[item.name]) {
-                diffVersionHash(oldVersion.childrenObject[item.name], item, result, path + '/' + item.name);
-            } else {
-                pushdiffVersionHashResult(item, path + '/' + item.name, result.added);
-            }
-        });
+export function diffVersionHash (oldVersion: HashedFolder, newVersion: HashedFolder, result: DiffVersionHashResult = new DiffVersionHashResult(), path: string = ".") {
+  // 不管是文件夹还是文件 hash一样就返回
+  if (newVersion.hash === oldVersion.hash) {
+    return result;
+  } else if (newVersion.children) {
+    newVersion.children.forEach(item => {
+      item = item as HashedFolderAndFileType;
+      // 如果老版本含有相同
+      if (oldVersion.childrenObject && oldVersion.childrenObject[item.name]) {
+        diffVersionHash(oldVersion.childrenObject[item.name], item, result, path + "/" + item.name);
+      } else {
+        pushdiffVersionHashResult(item, path + "/" + item.name, result.added);
+      }
+    });
   } else {
     result.changed.push({
       filePath: path,
@@ -162,28 +131,19 @@ export function diffVersionHash(
  * @param {string} path
  * @param {DiffVersionHashResultItem[]} resultAdd
  */
-export function pushdiffVersionHashResult(
-    item: HashedFolderAndFileType,
-    path: string,
-    resultAdd: DiffVersionHashResultItem[]
-) {
-    // 作为文件夹
-    if ((item as HashedFolder).children) {
-        (item as HashedFolder).children!.forEach((child) => {
-            pushdiffVersionHashResult(
-                child as HashedFolderAndFileType,
-                path + '/' + child!.name,
-                resultAdd
-            );
-        });
-    } else {
+export function pushdiffVersionHashResult (item: HashedFolderAndFileType, path: string, resultAdd: DiffVersionHashResultItem[]) {
+  // 作为文件夹
+  if ((item as HashedFolder).children) {
+    (item as HashedFolder).children!.forEach(child => {
+      pushdiffVersionHashResult(child as HashedFolderAndFileType, path + "/" + child!.name, resultAdd);
+    });
+  } else {
     resultAdd.push({
       filePath: path,
       hash: item.hash
     });
-    }
+  }
 }
-
 /**
  * gzip压缩一个文件到指定路径下
  *
@@ -192,17 +152,16 @@ export function pushdiffVersionHashResult(
  * @param {string} targetPath
  * @return {*}
  */
-export function gzip(source: string, targetPath: string): Promise<void> {
-    // source文件目录
-    return new Promise((resolve, reject: (err: Error) => void) => {
-        const gzip = createGzip(); // 转化流 可读可写
-        const writeStream = createWriteStream(targetPath);
-        const readStream = createReadStream(source);
-        readStream.on('close', resolve);
-        readStream.on('error', reject);
-        writeStream.on('error', reject);
-        readStream.pipe(gzip).pipe(writeStream); // 读=>压缩=>写新的
-    });
+export function gzip (source: string, targetPath: string): Promise<void> { // source文件目录
+  return new Promise((resolve, reject: (err: Error) => void) => {
+    const gzip = createGzip(); // 转化流 可读可写
+    const writeStream = createWriteStream(targetPath);
+    const readStream = createReadStream(source);
+    readStream.on("close", resolve);
+    readStream.on("error", reject);
+    writeStream.on("error", reject);
+    readStream.pipe(gzip).pipe(writeStream); // 读=>压缩=>写新的
+  });
 }
 
 /**
@@ -214,27 +173,101 @@ export function gzip(source: string, targetPath: string): Promise<void> {
  * @param {string} targetPath
  * @param {boolean} [ignoreFirstDir=false]
  */
-export async function zipHashElement(
-    data: HashedFolderAndFileType,
-    path: string,
-    targetPath: string,
-    ignoreFirstDir: boolean = false
-) {
-    if ((data as HashedFolder).children) {
-        for (let i = 0; i < (data as HashedFolder).children!.length; i++) {
-            await zipHashElement(
-                (data as HashedFolder).children![i] as HashedFolderAndFileType,
-                path + (ignoreFirstDir ? '' : '/' + data.name),
-                targetPath
-            );
-        }
-    } else {
-        await gzip(path + '/' + data.name, join(targetPath, data.hash + '.gz'));
+export async function zipHashElement (data: HashedFolderAndFileType, path: string, targetPath:string, ignoreFirstDir: boolean = false) {
+  if ((data as HashedFolder).children) {
+    for (let i = 0; i < (data as HashedFolder).children!.length; i++) {
+      await zipHashElement((data as HashedFolder).children![i] as HashedFolderAndFileType, path + (ignoreFirstDir ? "" : "/" + data.name), targetPath);
     }
+  } else {
+    await gzip(path + "/" + data.name, join(targetPath, data.hash + ".gz"));
+  }
 }
 
-let downloadQueueLock = false;
-const downloadQueue = [];
+/**
+ * 更新electron
+ * TODO: 增加下载时回调
+ * @export
+ * @param {(updateInfo: UpdateInfo) => {}} statusCallBack // 更新状态回调
+ * @param {string} updaterName  更新updater名称
+ * @param {string} version  当前版本号
+ * @param {string} exePath 当前exe路径 app.getPath('exe')
+ * @param {string} tempDirectory  临时目录
+ * @param {string} updateConfigName  更新配置文件名称
+ * @param {UpdateJson} updateJson  更新配置文件
+ * @param {string} baseUrl  更新下载gzip的基本地址 `${url}/${gzipDirectory}${version}`
+ * @param {DownloadFn} downloadFn  下载函数
+ * @param {HashElementOptions} [options={files: {}}] 通过option 配置文件排除文件文件夹或指定后缀folders: { exclude: ['.*', 'node_modules', 'test_coverage'] },files: { exclude: ['*.js', '*.json'] },
+ */
+export async function updateElectron (
+  statusCallBack:(updateInfo: UpdateInfo) => void,
+  updaterName: string,
+  version: string,
+  exePath: string,
+  tempDirectory: string,
+  updateConfigName: string,
+  updateJson: UpdateJson,
+  baseUrl: string,
+  downloadFn: DownloadFn,
+  options:HashElementOptions = {
+    files: {}
+  }): Promise<UpdateStatus> {
+  const dirDirectory = dirname(exePath);
+  // const tempDirectory = join(dirDirectory, hotPublishConfig.tempDirectory);
+  const updateInfo = new UpdateInfo();
+  if (!existsSync(tempDirectory)) {
+    mkdirSync(tempDirectory);
+  }
+  const noAsar = process.noAsar;
+  try {
+    if (gt(updateJson.version, version)) {
+      updateInfo.status = "downloading";
+      process.noAsar = true;
+      const hash = hashElement(dirDirectory, options);
+      handleHashedFolderChildrenToObject(hash as HashedFolderAndFileType);
+      const diffResult = diffVersionHash(hash as HashedFolderAndFileType, updateJson.hash as HashedFolder);
+      // 写入更新配置文件
+      writeFileSync(join(tempDirectory, updateConfigName + ".json"), JSON.stringify(diffResult, null, 2));
+      // 下载
+      console.log(diffResult);
+      statusCallBack(updateInfo);
+
+      if (!baseUrl.endsWith("/")) {
+        baseUrl += "/";
+      }
+      await Promise.all(diffResult.changed.map(item => {
+        return downAndungzip(item.hash, `${baseUrl}${item.hash}.gz`, join(tempDirectory, item.hash), downloadFn);
+      }));
+      await Promise.all(diffResult.added.map(item => {
+        return downAndungzip(item.hash, `${baseUrl}${item.hash}.gz`, join(tempDirectory, item.hash), downloadFn);
+      }));
+      process.noAsar = noAsar;
+      console.log("complete");
+      // 下载完成 交给rust端处理
+      updateInfo.status = "finished";
+      statusCallBack(updateInfo);
+      spawn(updaterName, {
+        detached: true,
+        env: {
+          exe_path: exePath,
+          update_temp_path: tempDirectory,
+          update_config_file_name: updateConfigName + ".json",
+          exe_pid: process.pid.toString()
+        },
+        stdio: "ignore"
+      });
+      return UpdateStatus.Success;
+    } else {
+      return UpdateStatus.HaveNothingUpdate;
+    }
+  } catch (error) {
+    process.noAsar = noAsar;
+    console.log(error);
+    updateInfo.status = "failed";
+    updateInfo.message = error;
+    statusCallBack(updateInfo);
+    return UpdateStatus.Failed;
+  }
+}
 
 /**
  * 下载gzip文件
@@ -245,92 +278,74 @@ const downloadQueue = [];
  * @param {DownloadFn} downloadFn 下载工具
  * @return {*}  {Promise<boolean>}
  */
-export function downAndungzip(
-    sourceHash: string,
-    sourceUrl: string,
-    targetPath: string,
-    downloadFn: DownloadFn
-): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-        // 防止多次下载
-        if (existsSync(targetPath) && hash256(readFileSync(targetPath)) === sourceHash) {
-            resolve(true);
+function downAndungzip (sourceHash:string, sourceUrl: string, targetPath: string, downloadFn: DownloadFn): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    // 防止多次下载
+    if (existsSync(targetPath) && (hash256(readFileSync(targetPath)) === sourceHash)) {
+      resolve(true);
+    } else {
+      const hash = createHash("sha256");
+      const ungz = createGunzip();
+      const writeStream = createWriteStream(targetPath);
+      downloadFn(sourceUrl).then(response => {
+        response.pipe(ungz);
+      }, err => {
+        reject(err);
+      });
+      ungz.on("error", (err) => {
+        ungz.close();
+        writeStream.close();
+        hash.destroy();
+        reject(err);
+      });
+      ungz.on("data", (chunk) => {
+        hash.write(chunk);
+        writeStream.write(chunk);
+      });
+      ungz.on("end", () => {
+        if (hash.digest("hex") !== sourceHash) {
+          hash.destroy();
+          reject(new Error("下载文件出错"));
         } else {
-            const hash = createHash('sha256');
-            const ungz = createGunzip();
-            const writeStream = createWriteStream(targetPath);
-            downloadFn(sourceUrl).then(
-                (response) => {
-                    response.pipe(ungz);
-                },
-                (err) => {
-                    reject(err);
-                }
-            );
-            ungz.on('error', (err) => {
-                ungz.close();
-                writeStream.close();
-                hash.destroy();
-                reject(err);
-            });
-            ungz.on('data', (chunk) => {
-                hash.write(chunk);
-                writeStream.write(chunk);
-            });
-            ungz.on('end', () => {
-                if (hash.digest('hex') !== sourceHash) {
-                    hash.destroy();
-                    reject(new Error('下载文件出错'));
-                } else {
-                    resolve(true);
-                    // // 下载成功后将 ***.aaa 文件重命名为 ***
-                    // rename(targetPath + '.crdownload', targetPath, (err) => {
-                    //   if (err) {
-                    //     reject(err);
-                    //   } else {
-                    //     resolve(true);
-                    //   }
-                    // });
-                }
-            });
+          resolve(true);
         }
-    });
+      });
+    }
+  });
 }
-
 /**
  * 获取临时存储中所有差异包的文件名
  *
  * @param {string} tempDirectory 临时存储差异包的目录
  * @returns {*}  {Promise<string[]>}
  */
-export function getLocalDifferenceFileName(tempDirectory: string): Promise<string[]> {
-    return new Promise((resolve, reject) => {
-        try {
-            // 获取文件夹下的所有文件和文件夹
-            const files = readdirSync(tempDirectory);
+export function getLocalDifferenceFileName (tempDirectory: string): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    try {
+      // 获取文件夹下的所有文件和文件夹
+      const files = readdirSync(tempDirectory);
 
-            const result: string[] = [];
+      const result: string[] = [];
 
-            // 循环遍历所有文件和文件夹
-            for (const file of files) {
-                const filePath = `${tempDirectory}/${file}`;
-                // 判断文件类型
-                const stat = statSync(filePath);
-                if (stat.isFile()) {
-                    const ext = extname(filePath);
-                    if (ext === '') {
-                        const fileName = file;
-                        result.push(fileName);
-                    }
-                }
-            }
-            resolve(result);
-        } catch (error) {
-            reject(error);
+      // 循环遍历所有文件和文件夹
+      for (const file of files) {
+        const filePath = `${tempDirectory}/${file}`;
+        // 判断文件类型
+        const stat = statSync(filePath);
+        if (stat.isFile()) {
+          const ext = extname(filePath);
+          if (ext === "") {
+            const fileName = file;
+            result.push(fileName);
+          }
         }
-    });
+      }
+      resolve(result);
+    } catch (error) {
+      reject(error);
+    }
+  });
 }
-
 /**
  * 判断arr1是否属于arr2
  *
@@ -338,38 +353,38 @@ export function getLocalDifferenceFileName(tempDirectory: string): Promise<strin
  * @param arr2
  * @returns
  */
-export function hasSameElement(arr1: string[], arr2: string[]) {
-    if (arr2.length < arr1.length) return false;
-    const set1 = new Set(arr1);
-    const result = arr2.every((item) => set1.has(item));
-    return result;
+export function hasSameElement (arr1: string[], arr2: string[]) {
+  if (arr2.length < arr1.length) return false;
+  const set1 = new Set(arr1);
+  const result = arr2.every((item) => set1.has(item));
+  return result;
 }
 
 /**
- * 查找出arr2中不属于arr1中的所有数据
- *
- * @param {string[]} arr1
- * @param {string[]} arr2
- * @returns {string[]}
- */
-export function findDifferentElements(arr1: string[], arr2: string[]): string[] {
-    const aSet = new Set(arr1);
-    const newElements: string[] = [];
-    for (let i = 0; i < arr2.length; i++) {
-        // Set.has复杂度是O(1)
-        if (!aSet.has(arr2[i])) {
-            newElements.push(arr2[i]);
-        }
+* 查找出arr2中不属于arr1中的所有数据
+*
+* @param {string[]} arr1
+* @param {string[]} arr2
+* @returns {string[]}
+*/
+export function findDifferentElements (arr1: string[], arr2: string[]): string[] {
+  const aSet = new Set(arr1);
+  const newElements: string[] = [];
+  for (let i = 0; i < arr2.length; i++) {
+    // Set.has复杂度是O(1)
+    if (!aSet.has(arr2[i])) {
+      newElements.push(arr2[i]);
     }
-    return newElements;
+  }
+  return newElements;
 }
 
 /**
- * 数组去重
- *
- * @param {string[]} arr
- * @returns {string[]}
- */
-export function unique(arr: string[]): string[] {
-    return [...new Set([...arr])];
+* 数组去重
+*
+* @param {string[]} arr
+* @returns {string[]}
+*/
+export function unique (arr: string[]): string[] {
+  return [...new Set([...arr])];
 }
