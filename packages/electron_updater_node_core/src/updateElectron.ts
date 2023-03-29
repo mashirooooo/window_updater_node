@@ -10,13 +10,10 @@ import {
   UpdateJson
 } from "./type";
 import {
+  checkFileExitAndHash,
   diffVersionHash,
-  findDifferentElements,
-  getLocalDifferenceFileName,
   handleHashedFolderChildrenToObject,
   hashElement,
-  hasSameElement,
-  unique
 } from "./functions";
 import { existsSync, mkdirSync } from "fs";
 import { spawn } from "child_process";
@@ -38,99 +35,119 @@ export class UpdateElectron {
    * @param {HashElementOptions} [options={files: {}}] 通过option 配置文件排除文件文件夹或指定后缀folders: { exclude: ['.*', 'node_modules', 'test_coverage'] },files: { exclude: ['*.js', '*.json'] },
    */
   constructor (
-      public statusCallback: (res: UpdateInfo) => void,
-      public updaterName: string,
-      public version: string,
-      public exePath: string,
-      public tempDirectory: string,
-      public updateConfigName: string,
-      public updateJson: UpdateJson,
-      public baseUrl: string,
-      public downloadFn: DownloadFn,
-      public options: HashElementOptions = {
-        files: {}
-      }
-  ) {}
+    public statusCallback: (res: UpdateInfo) => void,
+    public updaterName: string,
+    public version: string,
+    public exePath: string,
+    public tempDirectory: string,
+    public updateConfigName: string,
+    public updateJson: UpdateJson,
+    public baseUrl: string,
+    public downloadFn: DownloadFn,
+    public options: HashElementOptions = {
+      files: {}
+    }
+  ) {
+    this.__diffResult = undefined;
+  }
 
   /**
    * 检查当前版本是否需要更新
    */
-  checkForUpdates (): DiffVersionHashResult | undefined {
+  async checkForUpdates (): Promise<boolean> {
     try {
       if (gt(this.updateJson.version, this.version)) {
         const dirDirectory = dirname(this.exePath);
         const hash = hashElement(dirDirectory, this.options);
         handleHashedFolderChildrenToObject(hash as HashedFolderAndFileType);
+        // 缓存result
         const diffResult = diffVersionHash(
-            hash as HashedFolderAndFileType,
-            this.updateJson.hash as HashedFolder
+          hash as HashedFolderAndFileType,
+          this.updateJson.hash as HashedFolder
         );
-        return diffResult;
+        if (diffResult && diffResult.added.concat(diffResult.changed).length > 0) {
+          this.__diffResult = Object.freeze(diffResult);
+        }
+        return !!this.__diffResult;
       }
-      return undefined;
+      return false;
     } catch (error) {
       this.statusCallback({
         message: error,
         status: "failed"
       });
       console.log("checkForUpdates", error);
+      return false;
     }
   }
+
+  /**
+   * diffResult
+   *
+   * @private
+   * @type {(DiffVersionHashResult | undefined)}
+   * @memberof UpdateElectron
+   */
+  private __diffResult: DiffVersionHashResult | undefined;
 
   /**
    * 下载差异包到本地
    * @param diffResult
    */
-  async downloadUpdate (diffResult: DiffVersionHashResult) {
-    try {
-      if (!existsSync(this.tempDirectory)) {
-        mkdirSync(this.tempDirectory);
-      }
-      if (!this.baseUrl.endsWith("/")) {
-        this.baseUrl += "/";
-      }
-      const changed = diffResult.changed.map((v) => v.hash);
-      const added = diffResult.added.map((v) => v.hash);
-      let tempFileHash: string[] = [];
+  async downloadUpdate (): Promise<boolean> {
+    if (this.__diffResult) {
       try {
-        tempFileHash = await getLocalDifferenceFileName(this.tempDirectory);
-      } catch (error) {
-        console.log("Get local difference packages", error);
-      }
-
-      const changedOptimizedData = findDifferentElements(tempFileHash, changed);
-      const addedOptimizedData = findDifferentElements(tempFileHash, added);
-      this.statusCallback({
-        message: {
-          changedOptimizedData: changedOptimizedData,
-          addedOptimizedData: addedOptimizedData,
-          changed: changed,
-          added: added,
-          tempFileHash: tempFileHash,
-          msg: "findDifferentElements"
-        },
-        status: "init"
-      });
-      await Promise.all(
-        unique([...addedOptimizedData, ...changedOptimizedData]).map((hash) => {
-          const fileName = `${this.baseUrl}${hash}.gz`;
-          this.downloadQueue.addTask(() => {
-            return this.downloadQueue.downAndungzip(
-              hash,
-              fileName,
-              join(this.tempDirectory, hash),
-              this.downloadFn
-            );
+        if (!existsSync(this.tempDirectory)) {
+          mkdirSync(this.tempDirectory);
+        }
+        if (!this.baseUrl.endsWith("/")) {
+          this.baseUrl += "/";
+        }
+        this.statusCallback({
+          message: {
+            changed: this.__diffResult.changed.map(i => i.hash),
+            added: this.__diffResult.added.map(i => i.hash),
+            msg: "findDifferentElements"
+          },
+          status: "init"
+        });
+        const r: Promise<boolean> = new Promise((resolve, reject) => {
+          this.downloadQueue.downLoadFinnishCallBack(() => {
+            resolve(true);
           });
-          return 1;
-        })
-      );
-    } catch (error) {
+          // 不会未定义
+          this.__diffResult!.added.concat(this.__diffResult!.changed).forEach(i => {
+            const fileName = `${this.baseUrl}${i.hash}.gz`;
+            this.downloadQueue.addTask({
+              task: () => {
+                return this.downloadQueue.downAndungzip(
+                  i.hash,
+                  fileName,
+                  join(this.tempDirectory, i.hash),
+                  this.downloadFn
+                );
+              },
+              finnishCallBack: (status: boolean) => {
+                // todo 下载失败回调 成功回调
+              }
+            });
+          });
+        });
+        return r;
+      } catch (error) {
+        this.statusCallback({
+          message: error,
+          status: "failed"
+        });
+        console.log("downloadUpdate", error);
+        return false;
+      }
+    } else {
       this.statusCallback({
-        message: error,
+        message: "程序无须更新",
         status: "failed"
       });
-      console.log("downloadUpdate", error);
+      return false;
     }
   }
 
@@ -200,33 +217,22 @@ export class UpdateElectron {
    *
    * @returns {Promise<boolean>} 如果有差异返回的是true
    */
-  async validateDiffPackageIntegrity (): Promise<boolean> {
-    const diffResult = this.checkForUpdates();
-    if (diffResult !== undefined) {
-      let tempFileHash: string[] = [];
-      const diffResultAll = unique([...diffResult.changed, ...diffResult.added].map((v) => v.hash));
-      try {
-        tempFileHash = await getLocalDifferenceFileName(this.tempDirectory);
-      } catch (error) {
-        console.log("Get local difference packages", error);
+  private async validateDiffPackageIntegrity (): Promise<boolean> {
+    if (this.__diffResult) {
+      for (const item of this.__diffResult.changed) {
+        const path = `${this.tempDirectory}/${item.hash}`;
+        const checkFileResult = await checkFileExitAndHash(path, item.hash);
+        if (!checkFileResult) {
+          return true;
+        }
       }
-      this.statusCallback({
-        message: {
-          tempFileHash: tempFileHash,
-          diffResultAll: diffResultAll,
-          msg: "validateDiffPackageIntegrity"
-        },
-        status: "init"
-      });
-      const is = hasSameElement(diffResultAll, tempFileHash);
-      this.statusCallback({
-        message: {
-          is: is,
-          msg: "hasSameElement"
-        },
-        status: "init"
-      });
-      return is;
+      for (const item of this.__diffResult.added) {
+        const path = `${this.tempDirectory}/${item.hash}`;
+        const checkFileResult = await checkFileExitAndHash(path, item.hash);
+        if (!checkFileResult) {
+          return true;
+        }
+      }
     }
     return false;
   }

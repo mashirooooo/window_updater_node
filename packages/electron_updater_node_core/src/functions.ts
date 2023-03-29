@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 import { basename, join, dirname, extname } from "path";
-import { statSync, readFileSync, readdirSync, createWriteStream, createReadStream, existsSync, mkdirSync, writeFileSync } from "fs";
+import { statSync, readFileSync, readdirSync, createWriteStream, createReadStream, existsSync, mkdirSync, writeFileSync, stat } from "fs";
 import { makeRe } from "minimatch";
 import { DiffVersionHashResult, DiffVersionHashResultItem, DownloadFn, HashedFile, HashedFolder, HashedFolderAndFileType, HashedFolderAndFileTypeObject, HashElementOptions, UpdateInfo, UpdateJson, UpdateStatus } from "./type";
 import { createGzip, createGunzip } from "zlib";
@@ -313,78 +313,99 @@ function downAndungzip (sourceHash:string, sourceUrl: string, targetPath: string
     }
   });
 }
+
 /**
- * 获取临时存储中所有差异包的文件名
+ * 检测文件是否存在
  *
- * @param {string} tempDirectory 临时存储差异包的目录
- * @returns {*}  {Promise<string[]>}
+ * @export
+ * @param {string} path
+ * @param {string} hash
+ * @return {Promise<boolean>}
  */
-export function getLocalDifferenceFileName (tempDirectory: string): Promise<string[]> {
-  return new Promise((resolve, reject) => {
-    try {
-      // 获取文件夹下的所有文件和文件夹
-      const files = readdirSync(tempDirectory);
-
-      const result: string[] = [];
-
-      // 循环遍历所有文件和文件夹
-      for (const file of files) {
-        const filePath = `${tempDirectory}/${file}`;
-        // 判断文件类型
-        const stat = statSync(filePath);
-        if (stat.isFile()) {
-          const ext = extname(filePath);
-          if (ext === "") {
-            const fileName = file;
-            result.push(fileName);
-          }
-        }
+export function checkFileExitAndHash (path: string, hash: string): Promise<boolean> {
+  return new Promise(resolve => {
+    stat(path, (err, file) => {
+      if (err) {
+        resolve(false);
+      } else {
+        resolve(file.isFile() && hashElement(path)?.hash === hash);
       }
-      resolve(result);
-    } catch (error) {
-      reject(error);
-    }
+    });
   });
 }
-/**
- * 判断arr1是否属于arr2
- *
- * @param arr1
- * @param arr2
- * @returns
- */
-export function hasSameElement (arr1: string[], arr2: string[]) {
-  if (arr2.length < arr1.length) return false;
-  const set1 = new Set(arr1);
-  const result = arr2.every((item) => set1.has(item));
-  return result;
-}
 
-/**
-* 查找出arr2中不属于arr1中的所有数据
-*
-* @param {string[]} arr1
-* @param {string[]} arr2
-* @returns {string[]}
-*/
-export function findDifferentElements (arr1: string[], arr2: string[]): string[] {
-  const aSet = new Set(arr1);
-  const newElements: string[] = [];
-  for (let i = 0; i < arr2.length; i++) {
-    // Set.has复杂度是O(1)
-    if (!aSet.has(arr2[i])) {
-      newElements.push(arr2[i]);
-    }
-  }
-  return newElements;
-}
+// /**
+//  * 获取临时存储中所有差异包的文件名
+//  *
+//  * @param {string} tempDirectory 临时存储差异包的目录
+//  * @returns {*}  {Promise<string[]>}
+//  */
+// export function getLocalDifferenceFileName (tempDirectory: string): Promise<string[]> {
+//   return new Promise((resolve, reject) => {
+//     try {
+//       // 获取文件夹下的所有文件和文件夹
+//       const files = readdirSync(tempDirectory);
 
-/**
-* 数组去重
-*
-* @param {string[]} arr
-* @returns {string[]}
-*/
-export function unique (arr: string[]): string[] {
-  return [...new Set([...arr])];
-}
+//       const result: string[] = [];
+
+//       // 循环遍历所有文件和文件夹
+//       for (const file of files) {
+//         const filePath = `${tempDirectory}/${file}`;
+//         // 判断文件类型
+//         const stat = statSync(filePath);
+//         if (stat.isFile()) {
+//           const ext = extname(filePath);
+//           if (ext === "") {
+//             const fileName = file;
+//             result.push(fileName);
+//           }
+//         }
+//       }
+//       resolve(result);
+//     } catch (error) {
+//       reject(error);
+//     }
+//   });
+// }
+// /**
+//  * 判断arr1是否属于arr2
+//  *
+//  * @param arr1
+//  * @param arr2
+//  * @returns
+//  */
+// export function hasSameElement (arr1: string[], arr2: string[]) {
+//   if (arr2.length < arr1.length) return false;
+//   const set1 = new Set(arr1);
+//   const result = arr2.every((item) => set1.has(item));
+//   return result;
+// }
+
+// /**
+// * 查找出arr2中不属于arr1中的所有数据
+// *
+// * @param {string[]} arr1
+// * @param {string[]} arr2
+// * @returns {string[]}
+// */
+// export function findDifferentElements (arr1: string[], arr2: string[]): string[] {
+//   const aSet = new Set(arr1);
+//   const newElements: string[] = [];
+//   for (let i = 0; i < arr2.length; i++) {
+//     // Set.has复杂度是O(1)
+//     if (!aSet.has(arr2[i])) {
+//       newElements.push(arr2[i]);
+//     }
+//   }
+//   return newElements;
+// }
+
+// /**
+// * 数组去重
+// *
+// * @param {string[]} arr
+// * @returns {string[]}
+// */
+// export function unique (arr: string[]): string[] {
+//   return [...new Set([...arr])];
+// }

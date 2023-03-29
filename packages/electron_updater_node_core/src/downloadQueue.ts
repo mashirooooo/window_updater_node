@@ -5,11 +5,20 @@ import { hash256 } from "./functions";
 import { DownloadFn } from "./type";
 
 // 定义下载任务类型
-type DownloadTask = () => Promise<boolean>;
+type DownloadTask = {
+  task: () => Promise<boolean>,
+  finnishCallBack: (status: boolean, err?: Error) => void
+};
 
 export default class DownloadQueue {
     private tasks: DownloadTask[] = [];
     private isDownloading = false;
+
+    public downLoadFinnishCallBack (callback: () => void) {
+      this.__downLoadFinnishCallBack = callback;
+    }
+
+    private __downLoadFinnishCallBack: () => void = () => 0;
 
     // 添加下载任务方法
     public addTask (task: DownloadTask) {
@@ -91,10 +100,14 @@ export default class DownloadQueue {
     private download () {
       const task = this.tasks.shift();
       if (task) {
-        task().then(() => {
+        task.task().then(() => {
+          task.finnishCallBack(true);
           this.download();
+        }).catch(err => {
+          task.finnishCallBack(false, err);
         });
       } else {
+        this.__downLoadFinnishCallBack();
         this.isDownloading = false;
       }
     }
