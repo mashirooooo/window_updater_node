@@ -13,7 +13,7 @@ import {
   checkFileExitAndHash,
   diffVersionHash,
   handleHashedFolderChildrenToObject,
-  hashElement,
+  hashElement
 } from "./functions";
 import { existsSync, mkdirSync } from "fs";
 import { spawn } from "child_process";

@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import { basename, join, dirname, extname } from "path";
+import { basename, join, dirname } from "path";
 import { statSync, readFileSync, readdirSync, createWriteStream, createReadStream, existsSync, mkdirSync, writeFileSync, stat } from "fs";
 import { makeRe } from "minimatch";
 import { DiffVersionHashResult, DiffVersionHashResultItem, DownloadFn, HashedFile, HashedFolder, HashedFolderAndFileType, HashedFolderAndFileTypeObject, HashElementOptions, UpdateInfo, UpdateJson, UpdateStatus } from "./type";

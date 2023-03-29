@@ -102,7 +102,7 @@ export interface UpdateJson {
  */
 export declare class UpdateInfo {
     constructor();
-    status: "init" | "failed";
+    status: "init" | "downloading" | "finished" | "failed";
     message: any;
 }
 export declare type DownloadFn = (url: string) => Promise<Readable>;
@@ -110,4 +110,11 @@ export declare enum UpdateStatus {
     HaveNothingUpdate = 0,
     Success = 1,
     Failed = 2
+}
+declare global {
+    namespace NodeJS {
+        interface Process {
+            noAsar?: boolean;
+        }
+    }
 }
