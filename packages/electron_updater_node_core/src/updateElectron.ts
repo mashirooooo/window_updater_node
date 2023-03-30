@@ -15,7 +15,7 @@ import {
   handleHashedFolderChildrenToObject,
   hashElement
 } from "./functions";
-import { existsSync, mkdirSync } from "fs";
+import { existsSync, mkdirSync, writeFileSync } from "fs";
 import { spawn } from "child_process";
 import DownloadQueue from "./downloadQueue";
 
@@ -23,7 +23,7 @@ export class UpdateElectron {
   downloadQueue = new DownloadQueue();
 
   /**
-   *
+   * @param {(res: UpdateInfo)} statusCallback  用于回调内部消息,一般情况用不到
    * @param {string} updaterName  更新updater名称
    * @param {string} version  当前版本号
    * @param {string} exePath 当前exe路径 app.getPath('exe')
@@ -53,9 +53,13 @@ export class UpdateElectron {
 
   /**
    * 检查当前版本是否需要更新
+   * 返回需要更新的文件数量
    */
-  async checkForUpdates (): Promise<boolean> {
+  async checkForUpdates (): Promise<number> {
     try {
+      if (!existsSync(this.tempDirectory)) {
+        mkdirSync(this.tempDirectory);
+      }
       if (gt(this.updateJson.version, this.version)) {
         const dirDirectory = dirname(this.exePath);
         const hash = hashElement(dirDirectory, this.options);
@@ -65,19 +69,20 @@ export class UpdateElectron {
           hash as HashedFolderAndFileType,
           this.updateJson.hash as HashedFolder
         );
+        // 写入更新配置文件
+        writeFileSync(join(this.tempDirectory, this.updateConfigName + ".json"), JSON.stringify(diffResult, null, 2));
         if (diffResult && diffResult.added.concat(diffResult.changed).length > 0) {
           this.__diffResult = Object.freeze(diffResult);
         }
-        return !!this.__diffResult;
+        return diffResult.added.concat(diffResult.changed).length;
       }
-      return false;
+      return 0;
     } catch (error) {
       this.statusCallback({
         message: error,
         status: "failed"
       });
-      console.log("checkForUpdates", error);
-      return false;
+      return 0;
     }
   }
 
@@ -103,14 +108,6 @@ export class UpdateElectron {
         if (!this.baseUrl.endsWith("/")) {
           this.baseUrl += "/";
         }
-        this.statusCallback({
-          message: {
-            changed: this.__diffResult.changed.map(i => i.hash),
-            added: this.__diffResult.added.map(i => i.hash),
-            msg: "findDifferentElements"
-          },
-          status: "init"
-        });
         const r: Promise<boolean> = new Promise((resolve, reject) => {
           this.downloadQueue.downLoadFinnishCallBack(() => {
             resolve(true);
@@ -139,7 +136,6 @@ export class UpdateElectron {
           message: error,
           status: "failed"
         });
-        console.log("downloadUpdate", error);
         return false;
       }
     } else {
@@ -164,7 +160,7 @@ export class UpdateElectron {
         is = force;
       } else {
         const isDiff = await this.validateDiffPackageIntegrity();
-        if (!isDiff) {
+        if (isDiff) {
           this.statusCallback({
             message: "Installation check difference failed",
             status: "failed"
@@ -183,24 +179,6 @@ export class UpdateElectron {
           },
           stdio: "ignore"
         });
-
-        child.stdout?.on("data", (data) => {
-          this.statusCallback({
-            message: {
-              data: JSON.stringify(data),
-              msg: "child.stdout data"
-            },
-            status: "init"
-          });
-        });
-
-        child.stdout?.on("close", () => {
-          this.statusCallback({
-            message: "child.stdout close",
-            status: "init"
-          });
-        });
-
         return true;
       }
       return false;

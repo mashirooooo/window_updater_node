@@ -22,7 +22,7 @@ export default class DownloadQueue {
 
     // 添加下载任务方法
     public addTask (task: DownloadTask) {
-      if (typeof task !== "function") {
+      if (typeof task.task !== "function") {
         throw new TypeError("Task must be a function!");
       }
       this.tasks.push(task);

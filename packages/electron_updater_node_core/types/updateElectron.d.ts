@@ -13,7 +13,7 @@ export declare class UpdateElectron {
     options: HashElementOptions;
     downloadQueue: DownloadQueue;
     /**
-     *
+     * @param {(res: UpdateInfo)} statusCallback  用于回调内部消息,一般情况用不到
      * @param {string} updaterName  更新updater名称
      * @param {string} version  当前版本号
      * @param {string} exePath 当前exe路径 app.getPath('exe')
@@ -27,8 +27,9 @@ export declare class UpdateElectron {
     constructor(statusCallback: (res: UpdateInfo) => void, updaterName: string, version: string, exePath: string, tempDirectory: string, updateConfigName: string, updateJson: UpdateJson, baseUrl: string, downloadFn: DownloadFn, options?: HashElementOptions);
     /**
      * 检查当前版本是否需要更新
+     * 返回需要更新的文件数量
      */
-    checkForUpdates(): Promise<boolean>;
+    checkForUpdates(): Promise<number>;
     /**
      * diffResult
      *
