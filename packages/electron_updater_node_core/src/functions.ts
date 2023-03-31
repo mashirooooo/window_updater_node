@@ -295,7 +295,7 @@ export function downAndungzip (sourceHash:string, sourceUrl: string, targetPath:
         });
         ungz.pipe(hash);
         ungz.pipe(writeStream);
-        response.once("end", () => {
+        ungz.once("end", () => {
           if (hash.digest("hex") !== sourceHash) {
             hash.destroy();
             reject(new Error("下载文件出错"));

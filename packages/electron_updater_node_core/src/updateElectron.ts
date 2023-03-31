@@ -157,20 +157,7 @@ export class UpdateElectron {
    */
   async install (force: boolean = false): Promise<boolean | undefined> {
     try {
-      let is = true;
-      if (force) {
-        is = force;
-      } else {
-        const isDiff = await this.validateDiffPackageIntegrity();
-        if (isDiff) {
-          this.statusCallback({
-            message: "Installation check difference failed",
-            status: "failed"
-          });
-          return false;
-        }
-      }
-      if (is) {
+      if (force || !await this.validateDiffPackageIntegrity()) {
         spawn(this.updaterName, {
           detached: true,
           env: {
@@ -182,13 +169,19 @@ export class UpdateElectron {
           stdio: "ignore"
         });
         return true;
+      } else {
+        this.statusCallback({
+          message: "Installation check difference failed",
+          status: "failed"
+        });
+        return false;
       }
-      return false;
     } catch (error) {
       this.statusCallback({
         message: error,
         status: "failed"
       });
+      return false;
     }
   }
 
