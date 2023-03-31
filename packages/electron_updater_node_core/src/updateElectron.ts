@@ -59,7 +59,9 @@ export class UpdateElectron {
       if (!existsSync(this.tempDirectory)) {
         mkdirSync(this.tempDirectory);
       }
+      const noAsar = process.noAsar;
       if (gt(this.updateJson.version, this.version)) {
+        process.noAsar = true;
         const dirDirectory = dirname(this.exePath);
         const hash = hashElement(dirDirectory, this.options);
         handleHashedFolderChildrenToObject(hash as HashedFolderAndFileType);
@@ -75,6 +77,7 @@ export class UpdateElectron {
         }
         return diffResult.added.concat(diffResult.changed).length;
       }
+      process.noAsar = noAsar;
       return 0;
     } catch (error) {
       this.statusCallback({
