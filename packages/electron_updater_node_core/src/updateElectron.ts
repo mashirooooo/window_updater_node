@@ -34,16 +34,16 @@ export class UpdateElectron {
    * @param {HashElementOptions} [options={files: {}}] 通过option 配置文件排除文件文件夹或指定后缀folders: { exclude: ['.*', 'node_modules', 'test_coverage'] },files: { exclude: ['*.js', '*.json'] },
    */
   constructor (
-    public statusCallback: (res: UpdateInfo) => void,
-    public updaterName: string,
-    public version: string,
-    public exePath: string,
-    public tempDirectory: string,
-    public updateConfigName: string,
-    public updateJson: UpdateJson,
-    public baseUrl: string,
-    public downloadFn: DownloadFn,
-    public options: HashElementOptions = {
+    private statusCallback: (res: UpdateInfo) => void,
+    private updaterName: string,
+    private version: string,
+    private exePath: string,
+    private tempDirectory: string,
+    private updateConfigName: string,
+    private updateJson: UpdateJson,
+    private baseUrl: string,
+    private downloadFn: DownloadFn,
+    private options: HashElementOptions = {
       files: {}
     }
   ) {
