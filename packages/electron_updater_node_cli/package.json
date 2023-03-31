@@ -35,7 +35,7 @@
     "@typescript-eslint/parser": "^5.18.0",
     "command-line-args": "^5.2.1",
     "command-line-usage": "^6.1.2",
-    "electron_updater_node_core": "^0.2.0",
+    "electron_updater_node_core": "^0.2.5",
     "eslint": "^7.32.0",
     "eslint-config-standard": "^16.0.3",
     "eslint-plugin-import": "^2.26.0",

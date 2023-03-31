@@ -503,10 +503,10 @@ doctrine@^3.0.0:
   dependencies:
     esutils "^2.0.2"
 
-electron_updater_node_core@^0.2.0:
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/electron_updater_node_core/-/electron_updater_node_core-0.2.0.tgz#1b5945241d2886e0ebc4fdbfe60ff89cb070b246"
-  integrity sha512-C2QkdJ57jyDZ5y90Rj+RfVMXYvLG9KrtlL+jNbbCGQ70WI8l2zfdklAiiYHUNlxWevVVAaoblRYoiG3pT7V6jQ==
+electron_updater_node_core@^0.2.5:
+  version "0.2.5"
+  resolved "https://registry.yarnpkg.com/electron_updater_node_core/-/electron_updater_node_core-0.2.5.tgz#2b0b12144ad5f7074a73a76acd0eb396ccc434f2"
+  integrity sha512-vgxR4ZNeak/gpawbmShQPV87R0gt1abeT3Nq3EqZs3yYCdPJJKcNpakxWgpMpiNVDhE3iMHx0U0pj17xpWhXPw==
 
 emoji-regex@^8.0.0:
   version "8.0.0"
