@@ -1,6 +1,6 @@
 {
   "name": "window_updater_node",
-  "version": "0.0.1",
+  "version": "0.3.0",
   "description": "electron增量更新node部分",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

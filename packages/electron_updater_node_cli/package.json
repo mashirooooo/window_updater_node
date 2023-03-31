@@ -1,6 +1,6 @@
 {
   "name": "electron_updater_node_cli",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "cli for electron updater",
   "main": "index.js",
   "types": "types/index.d.ts",
