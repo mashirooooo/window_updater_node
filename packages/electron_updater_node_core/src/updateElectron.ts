@@ -12,16 +12,15 @@ import {
 import {
   checkFileExitAndHash,
   diffVersionHash,
+  downAndungzip,
   handleHashedFolderChildrenToObject,
   hashElement
 } from "./functions";
 import { existsSync, mkdirSync, writeFileSync } from "fs";
 import { spawn } from "child_process";
-import DownloadQueue from "./downloadQueue";
+import Queue from "./queue";
 
 export class UpdateElectron {
-  downloadQueue = new DownloadQueue();
-
   /**
    * @param {(res: UpdateInfo)} statusCallback  用于回调内部消息,一般情况用不到
    * @param {string} updaterName  更新updater名称
@@ -109,24 +108,24 @@ export class UpdateElectron {
           this.baseUrl += "/";
         }
         const r: Promise<boolean> = new Promise((resolve, reject) => {
-          this.downloadQueue.downLoadFinnishCallBack(() => {
-            resolve(true);
-          });
+          const queue = new Queue(5, () => { resolve(true); });
           // 不会未定义
           this.__diffResult!.added.concat(this.__diffResult!.changed).forEach(i => {
             const fileName = `${this.baseUrl}${i.hash}.gz`;
-            this.downloadQueue.addTask({
+            queue.addTask({
               task: () => {
-                return this.downloadQueue.downAndungzip(
+                return downAndungzip(
                   i.hash,
                   fileName,
                   join(this.tempDirectory, i.hash),
                   this.downloadFn
                 );
               },
-              finnishCallBack: (status: boolean) => {
-                // todo 下载失败回调 成功回调
-              }
+              // todo 下载失败回调 成功回调
+              taskReject: (err) => {
+                console.log(err);
+              },
+              taskReslove: (status) => { }
             });
           });
         });
@@ -169,7 +168,7 @@ export class UpdateElectron {
         }
       }
       if (is) {
-        const child = spawn(this.updaterName, {
+        spawn(this.updaterName, {
           detached: true,
           env: {
             exe_path: this.exePath,

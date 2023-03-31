@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { DiffVersionHashResult, DiffVersionHashResultItem, HashedFolder, HashedFolderAndFileType, HashElementOptions } from "./type";
+import { DiffVersionHashResult, DiffVersionHashResultItem, DownloadFn, HashedFolder, HashedFolderAndFileType, HashElementOptions } from "./type";
 /**
  * 生成hash 256
  *
@@ -23,6 +23,16 @@ export declare function reduceGlobPatterns(globs: string[] | undefined | ((str: 
  * @returns {HashedFolderAndFileType}
  */
 export declare function hashElement(dirOrFilePath: string, options?: HashElementOptions): HashedFolderAndFileType | null;
+/**
+ * 根据文件路径生成hash
+ *
+ * @export
+ * @param {string} dirOrFilePath
+ * @param {HashElementOptions} [options={}]
+ * @param {number} [concurrency=1]
+ * @return {*}
+ */
+export declare function hashElementPromiseQueue(dirOrFilePath: string, options?: HashElementOptions, concurrency?: number): Promise<HashedFolderAndFileType | null>;
 /**
  * 用Object缓存文件信息，减少循环次数
  *
@@ -75,3 +85,13 @@ export declare function zipHashElement(data: HashedFolderAndFileType, path: stri
  * @return {Promise<boolean>}
  */
 export declare function checkFileExitAndHash(path: string, hash: string): Promise<boolean>;
+/**
+ * 下载gzip文件
+ *
+ * @param {string} sourceHash 文件hash
+ * @param {string} sourceUrl 文件url
+ * @param {string} targetPath 文件存放位置
+ * @param {DownloadFn} downloadFn 下载工具
+ * @return {*}  {Promise<boolean>}
+ */
+export declare function downAndungzip(sourceHash: string, sourceUrl: string, targetPath: string, downloadFn: DownloadFn): Promise<boolean>;

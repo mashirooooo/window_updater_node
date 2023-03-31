@@ -1,5 +1,4 @@
 import { DownloadFn, HashElementOptions, UpdateInfo, UpdateJson } from "./type";
-import DownloadQueue from "./downloadQueue";
 export declare class UpdateElectron {
     statusCallback: (res: UpdateInfo) => void;
     updaterName: string;
@@ -11,7 +10,6 @@ export declare class UpdateElectron {
     baseUrl: string;
     downloadFn: DownloadFn;
     options: HashElementOptions;
-    downloadQueue: DownloadQueue;
     /**
      * @param {(res: UpdateInfo)} statusCallback  用于回调内部消息,一般情况用不到
      * @param {string} updaterName  更新updater名称

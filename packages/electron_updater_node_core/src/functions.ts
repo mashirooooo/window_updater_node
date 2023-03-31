@@ -1,10 +1,10 @@
 import { createHash } from "crypto";
 import { basename, join } from "path";
-import { statSync, readFileSync, readdirSync, createWriteStream, createReadStream, stat } from "fs";
+import { statSync, readFileSync, readdirSync, createWriteStream, createReadStream, stat, existsSync } from "fs";
 import { makeRe } from "minimatch";
-import { DiffVersionHashResult, DiffVersionHashResultItem, HashedFile, HashedFolder, HashedFolderAndFileType, HashedFolderAndFileTypeObject, HashElementOptions } from "./type";
-import { createGzip } from "zlib";
-
+import { DiffVersionHashResult, DiffVersionHashResultItem, DownloadFn, HashedFile, HashedFolder, HashedFolderAndFileType, HashedFolderAndFileTypeObject, HashElementOptions } from "./type";
+import { createGunzip, createGzip } from "zlib";
+import Queue from "./queue";
 /**
  * 生成hash 256
  *
@@ -71,6 +71,72 @@ export function hashElement (dirOrFilePath: string, options: HashElementOptions 
     return result;
   }
   return null;
+}
+
+/**
+ * 根据文件路径生成hash
+ *
+ * @export
+ * @param {string} dirOrFilePath
+ * @param {HashElementOptions} [options={}]
+ * @param {number} [concurrency=1]
+ * @return {*}
+ */
+export function hashElementPromiseQueue (dirOrFilePath: string, options: HashElementOptions = {}, concurrency: number = 1): Promise<HashedFolderAndFileType|null> {
+  return new Promise((resolve, reject) => {
+    stat(dirOrFilePath, (err, fileOrDir) => {
+      if (err) {
+        reject(err);
+      } else {
+        const baseName = basename(dirOrFilePath);
+        if (fileOrDir.isFile()) {
+          if (reduceGlobPatterns(options?.files?.exclude, baseName)) {
+            return resolve(null);
+          }
+          const result = new HashedFile();
+          result.name = baseName;
+          const input = createReadStream(dirOrFilePath);
+          const hash256 = createHash("sha256");
+          input.pipe(hash256);
+          input.on("end", () => {
+            result.hash = hash256.digest("hex");
+            resolve(result);
+            input.close();
+          });
+          input.on("error", (err) => {
+            reject(err);
+          });
+        } else if (fileOrDir.isDirectory()) {
+          if (reduceGlobPatterns(options?.folders?.exclude, baseName)) {
+            return resolve(null);
+          }
+          const result = new HashedFolder();
+          result.name = baseName;
+          const dirInfos = readdirSync(dirOrFilePath);
+          const reslutQueue: (HashedFolderAndFileType | null) [] = [];
+          const limteQueue = new Queue<HashedFolderAndFileType | null>(concurrency, () => {
+            result.children = reslutQueue.filter(item => item !== null);
+            result.hash = hash256(result.children.map(item => item!.hash).join(""));
+            resolve(result);
+          });
+          for (const item of dirInfos) {
+            limteQueue.addTask({
+              task: () => hashElementPromiseQueue(join(dirOrFilePath, item), options),
+              taskReslove: (res) => {
+                reslutQueue.push(res);
+              },
+              taskReject: (err) => {
+                limteQueue.stop();
+                reject(err);
+              }
+            });
+          }
+        } else {
+          return resolve(null);
+        }
+      }
+    });
+  });
 }
 
 /**
@@ -198,5 +264,48 @@ export function checkFileExitAndHash (path: string, hash: string): Promise<boole
         resolve(file.isFile() && hashElement(path)?.hash === hash);
       }
     });
+  });
+}
+
+/**
+ * 下载gzip文件
+ *
+ * @param {string} sourceHash 文件hash
+ * @param {string} sourceUrl 文件url
+ * @param {string} targetPath 文件存放位置
+ * @param {DownloadFn} downloadFn 下载工具
+ * @return {*}  {Promise<boolean>}
+ */
+export function downAndungzip (sourceHash:string, sourceUrl: string, targetPath: string, downloadFn: DownloadFn): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    // 防止多次下载
+    if (existsSync(targetPath) && (hash256(readFileSync(targetPath)) === sourceHash)) {
+      resolve(true);
+    } else {
+      const hash = createHash("sha256");
+      const ungz = createGunzip();
+      const writeStream = createWriteStream(targetPath);
+      downloadFn(sourceUrl).then(response => {
+        response.pipe(ungz);
+        response.once("error", (err) => {
+          ungz.close();
+          writeStream.close();
+          hash.destroy();
+          reject(err);
+        });
+        ungz.pipe(hash);
+        ungz.pipe(writeStream);
+        response.once("end", () => {
+          if (hash.digest("hex") !== sourceHash) {
+            hash.destroy();
+            reject(new Error("下载文件出错"));
+          } else {
+            resolve(true);
+          }
+        });
+      }, err => {
+        reject(err);
+      });
+    }
   });
 }
