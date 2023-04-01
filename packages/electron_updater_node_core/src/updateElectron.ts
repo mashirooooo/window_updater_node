@@ -1,5 +1,6 @@
 import { gt } from "semver";
 import { join, dirname } from "path";
+import sudo from "@vscode/sudo-prompt";
 import {
   DiffVersionHashResult,
   DownloadFn,
@@ -18,7 +19,7 @@ import {
 } from "./functions";
 import { existsSync, mkdirSync, writeFileSync } from "fs";
 import { spawn } from "child_process";
-import Queue from "./queue";
+import { Queue } from "./queue";
 
 export class UpdateElectron {
   /**
@@ -150,25 +151,65 @@ export class UpdateElectron {
   }
 
   /**
-   * 安装
+   * 管理员
    *
-   * @param force 是否强制安装,强制安装的话不会检查本地的差异包是否完整
-   * @returns {Promise<boolean>} false为无法执行安装
+   * @private
+   * @memberof UpdateElectron
    */
-  async install (force: boolean = false): Promise<boolean | undefined> {
+  private sudoInstall (): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      sudo.exec(this.updaterName, {
+        env: {
+          exe_path: this.exePath,
+          update_temp_path: this.tempDirectory,
+          update_config_file_name: this.updateConfigName + ".json",
+          exe_pid: process.pid.toString(),
+          UPDATE_RUN_ADMIN: "1"
+        },
+        name: this.updaterName
+
+      }, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(true);
+        }
+      });
+    });
+  }
+
+  /**
+   * 正常安装
+   *
+   * @private
+   * @memberof UpdateElectron
+   */
+  private normalInstall (): true {
+    spawn(this.updaterName, {
+      detached: true,
+      env: {
+        exe_path: this.exePath,
+        update_temp_path: this.tempDirectory,
+        update_config_file_name: this.updateConfigName + ".json",
+        exe_pid: process.pid.toString()
+      },
+      stdio: "ignore"
+    });
+    return true;
+  }
+
+  /**
+   *
+   *
+   * @param {boolean} [force=false] 是否强制安装,强制安装的话不会检查本地的差异包是否完整
+   * @param {boolean} [sudoInstall=true] 是否管理员安装安装
+   * @return {*}  {Promise<boolean>}
+   * @memberof UpdateElectron
+   */
+  async install (force: boolean = false, sudoInstall: boolean = true): Promise<boolean> {
     try {
       if (force || !await this.validateDiffPackageIntegrity()) {
-        spawn(this.updaterName, {
-          detached: true,
-          env: {
-            exe_path: this.exePath,
-            update_temp_path: this.tempDirectory,
-            update_config_file_name: this.updateConfigName + ".json",
-            exe_pid: process.pid.toString()
-          },
-          stdio: "ignore"
-        });
-        return true;
+        return sudoInstall ? this.sudoInstall() : this.normalInstall();
       } else {
         this.statusCallback({
           message: "Installation check difference failed",

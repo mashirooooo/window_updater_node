@@ -6,7 +6,7 @@ export type Task<T> = {
   taskReject?: (error: Error) => void
 };
 
-export default class Queue<T = boolean> {
+export class Queue<T = boolean> {
   private concurrency: number; // 并发任务数
   private queue: Task<T>[] = []; // 任务队列
   private activeCount = 0; // 当前正在执行的任务数

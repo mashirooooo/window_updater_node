@@ -1,15 +1,15 @@
 import { DownloadFn, HashElementOptions, UpdateInfo, UpdateJson } from "./type";
 export declare class UpdateElectron {
-    statusCallback: (res: UpdateInfo) => void;
-    updaterName: string;
-    version: string;
-    exePath: string;
-    tempDirectory: string;
-    updateConfigName: string;
-    updateJson: UpdateJson;
-    baseUrl: string;
-    downloadFn: DownloadFn;
-    options: HashElementOptions;
+    private statusCallback;
+    private updaterName;
+    private version;
+    private exePath;
+    private tempDirectory;
+    private updateConfigName;
+    private updateJson;
+    private baseUrl;
+    private downloadFn;
+    private options;
     /**
      * @param {(res: UpdateInfo)} statusCallback  用于回调内部消息,一般情况用不到
      * @param {string} updaterName  更新updater名称
@@ -42,12 +42,28 @@ export declare class UpdateElectron {
      */
     downloadUpdate(): Promise<boolean>;
     /**
-     * 安装
+     * 管理员
      *
-     * @param force 是否强制安装,强制安装的话不会检查本地的差异包是否完整
-     * @returns {Promise<boolean>} false为无法执行安装
+     * @private
+     * @memberof UpdateElectron
      */
-    install(force?: boolean): Promise<boolean | undefined>;
+    private sudoInstall;
+    /**
+     * 正常安装
+     *
+     * @private
+     * @memberof UpdateElectron
+     */
+    private normalInstall;
+    /**
+     *
+     *
+     * @param {boolean} [force=false] 是否强制安装,强制安装的话不会检查本地的差异包是否完整
+     * @param {boolean} [sudoInstall=true] 是否管理员安装安装
+     * @return {*}  {Promise<boolean>}
+     * @memberof UpdateElectron
+     */
+    install(force?: boolean, sudoInstall?: boolean): Promise<boolean>;
     /**
      * 检查本地和远程差异包是否有不一样
      *

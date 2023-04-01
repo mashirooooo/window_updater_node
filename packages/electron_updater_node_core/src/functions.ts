@@ -4,7 +4,7 @@ import { statSync, readFileSync, readdirSync, createWriteStream, createReadStrea
 import { makeRe } from "minimatch";
 import { DiffVersionHashResult, DiffVersionHashResultItem, DownloadFn, HashedFile, HashedFolder, HashedFolderAndFileType, HashedFolderAndFileTypeObject, HashElementOptions } from "./type";
 import { createGunzip, createGzip } from "zlib";
-import Queue from "./queue";
+import { Queue } from "./queue";
 /**
  * 生成hash 256
  *
