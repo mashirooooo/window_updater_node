@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 import { basename, join } from "path";
-import { statSync, readFileSync, readdirSync, createWriteStream, createReadStream, stat, existsSync } from "fs";
+import { statSync, readFileSync, readdirSync, createWriteStream, createReadStream, stat, existsSync, rename } from "fs";
 import { makeRe } from "minimatch";
 import { DiffVersionHashResult, DiffVersionHashResultItem, DownloadFn, HashedFile, HashedFolder, HashedFolderAndFileType, HashedFolderAndFileTypeObject, HashElementOptions } from "./type";
 import { createGunzip, createGzip } from "zlib";
@@ -295,12 +295,15 @@ export function downAndungzip (sourceHash:string, sourceUrl: string, targetPath:
         });
         ungz.pipe(hash);
         ungz.pipe(writeStream);
-        ungz.once("end", () => {
+        ungz.on("end", () => {
           if (hash.digest("hex") !== sourceHash) {
             hash.destroy();
             reject(new Error("下载文件出错"));
           } else {
-            resolve(true);
+            writeStream.on("finish", () => {
+              resolve(true);
+            });
+            writeStream.end();
           }
         });
       }, err => {

@@ -124,7 +124,7 @@ export class UpdateInfo {
     this.message = "";
   };
 
-  status: "init"| "downloading" | "finished" | "failed";
+  status: "init"| "download" | "finished" | "failed";
   message: any;
 }
 

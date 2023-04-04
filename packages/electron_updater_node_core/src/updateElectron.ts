@@ -112,7 +112,7 @@ export class UpdateElectron {
           this.baseUrl += "/";
         }
         const r: Promise<boolean> = new Promise((resolve, reject) => {
-          const queue = new Queue(5, () => { resolve(true); });
+          const queue = new Queue(1, () => { resolve(true); });
           // 不会未定义
           this.__diffResult!.added.concat(this.__diffResult!.changed).forEach(i => {
             const fileName = `${this.baseUrl}${i.hash}.gz`;
@@ -127,9 +127,23 @@ export class UpdateElectron {
               },
               // todo 下载失败回调 成功回调
               taskReject: (err) => {
-                console.log(err);
+                this.statusCallback({
+                  message: {
+                    url: fileName,
+                    status: -1
+                  },
+                  status: "download"
+                });
               },
-              taskReslove: (status) => { }
+              taskReslove: (status) => {
+                this.statusCallback({
+                  message: {
+                    url: fileName,
+                    status: 1
+                  },
+                  status: "download"
+                });
+              }
             });
           });
         });
